@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caixa Simples</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 15px;
+}
+h1 {
+    text-align: center;
+}
+.card {
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+input, select, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 16px;
+}
+button {
+    background: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 8px;
+}
+.lista div {
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.valor {
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📒 Caixa</h1>
+
+<div class="card">
+    <div class="valor" id="saldo">Saldo geral: R$ 0,00</div>
+</div>
+
+<div class="card">
+    <h3>📅 Resumo de Hoje</h3>
+    <div id="hoje"></div>
+</div>
+
+<div class="card">
+    <h3>📆 Resumo do Mês</h3>
+    <div id="mes"></div>
+</div>
+
+<div class="card">
+    <select id="tipo">
+        <option value="entrada">Entrada</option>
+        <option value="saida">Saída</option>
+    </select>
+
+    <input type="number" id="valor" placeholder="Valor" />
+    <input type="text" id="descricao" placeholder="Descrição" />
+
+    <button onclick="adicionar()">Salvar</button>
+</div>
+
+<div class="card">
+    <h3>📜 Histórico</h3>
+    <div id="historico" class="lista"></div>
+</div>
+
+<script>
+let registros = JSON.parse(localStorage.getItem("caixa")) || [];
+
+function salvar() {
+    localStorage.setItem("caixa", JSON.stringify(registros));
+}
+
+function formatar(v) {
+    return "R$ " + v.toFixed(2);
+}
+
+function adicionar() {
+    let tipo = tipoEl.value;
+    let valor = parseFloat(valorEl.value);
+    let desc = descricaoEl.value;
+    let data = new Date();
+
+    if (!valor || valor <= 0) {
+        alert("Valor inválido");
+        return;
+    }
+
+    registros.push({ tipo, valor, desc, data });
+    salvar();
+    atualizar();
+
+    valorEl.value = "";
+    descricaoEl.value = "";
+}
+
+const tipoEl = document.getElementById("tipo");
+const valorEl = document.getElementById("valor");
+const descricaoEl = document.getElementById("descricao");
+
+function atualizar() {
+    let saldo = 0;
+    let hojeE = 0, hojeS = 0;
+    let mesE = 0, mesS = 0;
+
+    let hoje = new Date().toDateString();
+    let mesAtual = new Date().getMonth();
+    let anoAtual = new Date().getFullYear();
+
+    let hist = "";
+
+    registros.forEach(r => {
+        let d = new Date(r.data);
+        let isHoje = d.toDateString() === hoje;
+        let isMes = d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+
+        if (r.tipo === "entrada") {
+            saldo += r.valor;
+            if (isHoje) hojeE += r.valor;
+            if (isMes) mesE += r.valor;
+        } else {
+            saldo -= r.valor;
+            if (isHoje) hojeS += r.valor;
+            if (isMes) mesS += r.valor;
+        }
+
+        hist += `<div>
+            ${r.tipo === "entrada" ? "➕" : "➖"}
+            ${formatar(r.valor)} - ${r.desc}
+        </div>`;
+    });
+
+    saldoEl.innerText = "Saldo geral: " + formatar(saldo);
+
+    hojeEl.innerHTML = `
+        Entradas: ${formatar(hojeE)}<br>
+        Saídas: ${formatar(hojeS)}<br>
+        Saldo do dia: ${formatar(hojeE - hojeS)}
+    `;
+
+    mesEl.innerHTML = `
+        Entradas: ${formatar(mesE)}<br>
+        Saídas: ${formatar(mesS)}<br>
+        Saldo do mês: ${formatar(mesE - mesS)}
+    `;
+
+    historicoEl.innerHTML = hist;
+}
+
+const saldoEl = document.getElementById("saldo");
+const hojeEl = document.getElementById("hoje");
+const mesEl = document.getElementById("mes");
+const historicoEl = document.getElementById("historico");
+
+atualizar();
+</script>
+
+</body>
+</html>
